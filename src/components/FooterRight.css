@@ -62,3 +62,21 @@
     transform: rotate(360deg);
   }
 }
+
+
+/* add more */
+
+.footer-right {
+  position: absolute;
+  right: 0;
+  /* Existing styles */
+  z-index: 100;
+  color: #fff;
+  margin-right: 5px;
+  margin-bottom: 25px;
+}
+
+.parent-container {
+  position: relative;
+  /* Other styles */
+}
