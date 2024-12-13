@@ -3,8 +3,9 @@ import './App.css';
 import VideoCard from './components/VideoCard';
 import BottomNavbar from './components/BottomNavbar';
 import TopNavbar from './components/TopNavbar';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
 
-// This array holds information about different videos
 const videoUrls = [
   {
     url: require('./videos/video1.mp4'),
@@ -53,28 +54,33 @@ const videoUrls = [
 ];
 
 function App() {
-  const [videos, setVideos] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredVideos, setFilteredVideos] = useState(videoUrls);
   const videoRefs = useRef([]);
+  const [currentVideoInfo, setCurrentVideoInfo] = useState(null);
+  const [isSharePopupVisible, setIsSharePopupVisible] = useState(false);
 
-  useEffect(() => {
-    setVideos(videoUrls);
-  }, []);
+  const toggleSharePopup = () => {
+    setIsSharePopupVisible(!isSharePopupVisible);
+  };
 
   useEffect(() => {
     const observerOptions = {
       root: null,
       rootMargin: '0px',
-      threshold: 0.8, // Adjust this value to change the scroll trigger point
+      threshold: 0.5,
     };
 
-    // This function handles the intersection of videos
     const handleIntersection = (entries) => {
       entries.forEach((entry) => {
+        const videoElement = entry.target;
         if (entry.isIntersecting) {
-          const videoElement = entry.target;
           videoElement.play();
+          const videoIndex = videoRefs.current.indexOf(videoElement);
+          if (videoIndex !== -1) {
+            setCurrentVideoInfo(filteredVideos[videoIndex]);
+          }
         } else {
-          const videoElement = entry.target;
           videoElement.pause();
         }
       });
@@ -82,48 +88,126 @@ function App() {
 
     const observer = new IntersectionObserver(handleIntersection, observerOptions);
 
-    // We observe each video reference to trigger play/pause
+    // Observe each video
     videoRefs.current.forEach((videoRef) => {
-      observer.observe(videoRef);
+      if (videoRef) observer.observe(videoRef);
     });
 
-    // We disconnect the observer when the component is unmounted
+    // Clean up the observer on unmount
     return () => {
       observer.disconnect();
     };
-  }, [videos]);
+  }, [filteredVideos]);
 
-  // This function handles the reference of each video
-  const handleVideoRef = (index) => (ref) => {
-    videoRefs.current[index] = ref;
+  useEffect(() => {
+    if (searchQuery) {
+      const filtered = videoUrls.filter((video) =>
+        video.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredVideos(filtered);
+    } else {
+      setFilteredVideos(videoUrls);
+    }
+  }, [searchQuery]);
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+  };
+
+  const handleDrag = (e) => {
+    let initialY = 0;
+    let finalY = 0;
+
+    const onMouseDown = (event) => {
+      initialY = event.clientY;
+    };
+
+    const onMouseUp = (event) => {
+      finalY = event.clientY;
+      if (initialY > finalY + 50) {
+        setFilteredVideos((prev) => prev.slice(1).concat(prev[0]));
+      } else if (initialY < finalY - 50) {
+        setFilteredVideos((prev) => [prev[prev.length - 1]].concat(prev.slice(0, -1)));
+      }
+    };
+
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mouseup', onMouseUp);
+
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  };
+
+  const handleCopy = (videoUrl) => {
+    navigator.clipboard.writeText(videoUrl).then(() => {
+      alert('Video URL copied to clipboard!');
+    });
   };
 
   return (
-    <div className="app">
-      <div className="container">
-        <TopNavbar className="top-navbar" />
-        {/* Here we map over the videos array and create VideoCard components */}
-        {videos.map((video, index) => (
-          <VideoCard
-            key={index}
-            username={video.username}
-            description={video.description}
-            song={video.song}
-            likes={video.likes}
-            saves={video.saves}
-            comments={video.comments}
-            shares={video.shares}
-            url={video.url}
-            profilePic={video.profilePic}
-            setVideoRef={handleVideoRef(index)}
-            autoplay={index === 0}
-          />
+    <div className="App">
+      <TopNavbar />
+      <form onSubmit={handleSearchSubmit}>
+        <input
+          type="text"
+          placeholder="Search by hashtag"
+          value={searchQuery}
+          onChange={handleSearchChange}
+        />
+        <button type="submit">
+          <FontAwesomeIcon icon={faSearch} />
+        </button>
+      </form>
+      <div className="video-container" onMouseDown={handleDrag}>
+        {filteredVideos.map((video, index) => (
+          <div key={index} className="video-wrapper">
+            <VideoCard
+              url={video.url}
+              profilePic={video.profilePic}
+              username={video.username}
+              description={video.description}
+              song={video.song}
+              likes={video.likes}
+              comments={video.comments}
+              saves={video.saves}
+              shares={video.shares}
+              setVideoRef={(ref) => (videoRefs.current[index] = ref)}
+            />
+            <button onClick={() => handleCopy(video.url)}>Save</button>
+            <button onClick={toggleSharePopup}>Share</button>
+          </div>
         ))}
-        <BottomNavbar className="bottom-navbar" />
       </div>
+      {isSharePopupVisible && (
+        <div className="share-popup">
+          <h3>Share this video</h3>
+          <button>Facebook</button>
+          <button>Instagram</button>
+          <button>Thread</button>
+          <button onClick={toggleSharePopup}>Close</button>
+        </div>
+      )}
+      {currentVideoInfo && (
+        <div className="video-info">
+          <h3>Video Information</h3>
+          <p><strong>Username:</strong> {currentVideoInfo.username}</p>
+          <p><strong>Description:</strong> {currentVideoInfo.description}</p>
+          <p><strong>Song:</strong> {currentVideoInfo.song}</p>
+          <p><strong>Likes:</strong> {currentVideoInfo.likes}</p>
+          <p><strong>Comments:</strong> {currentVideoInfo.comments}</p>
+          <p><strong>Saves:</strong> {currentVideoInfo.saves}</p>
+          <p><strong>Shares:</strong> {currentVideoInfo.shares}</p>
+        </div>
+      )}
+      <BottomNavbar />
     </div>
   );
-  
 }
 
 export default App;

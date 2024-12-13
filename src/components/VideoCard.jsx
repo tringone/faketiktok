@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
-import PropTypes from 'prop-types'; // Fix: Import PropTypes
 import FooterLeft from './FooterLeft';
 import FooterRight from './FooterRight';
+
+
 
 const VideoCard = (props) => {
   const {
@@ -18,21 +19,21 @@ const VideoCard = (props) => {
     autoplay
   } = props;
 
+
+
   const videoRef = useRef(null);
 
   useEffect(() => {
-    if (autoplay && videoRef.current) {
+    if (autoplay) {
       videoRef.current.play();
     }
   }, [autoplay]);
 
   const onVideoPress = () => {
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play();
-      } else {
-        videoRef.current.pause();
-      }
+    if (videoRef.current.paused) {
+      videoRef.current.play();
+    } else {
+      videoRef.current.pause();
     }
   };
 
@@ -53,10 +54,10 @@ const VideoCard = (props) => {
         playsInline
         src={url}
       ></video>
-
+  
       <div className="bottom-controls">
         <div className="footer-left">
-          <FooterLeft username={username} description={description} song={song} />
+          <FooterLeft username={username} description={description} song={song}/>
         </div>
         <div className="footer-right">
           <FooterRight
@@ -71,32 +72,4 @@ const VideoCard = (props) => {
     </div>
   );
 };
-
-// PropTypes validation
-VideoCard.propTypes = {
-  url: PropTypes.string.isRequired,
-  username: PropTypes.string,
-  description: PropTypes.string,
-  song: PropTypes.string,
-  likes: PropTypes.number,
-  shares: PropTypes.number,
-  comments: PropTypes.number,
-  saves: PropTypes.number,
-  profilePic: PropTypes.string,
-  setVideoRef: PropTypes.func,
-  autoplay: PropTypes.bool
-};
-
-VideoCard.defaultProps = {
-  username: '',
-  description: '',
-  song: '',
-  likes: 0,
-  shares: 0,
-  comments: 0,
-  saves: 0,
-  profilePic: '',
-  autoplay: false
-};
-
 export default VideoCard;
